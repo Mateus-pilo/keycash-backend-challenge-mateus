@@ -1,0 +1,56 @@
+version: '3.3'
+
+networks:
+  challenge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.57.0/24
+services:
+  mysql:
+    image: mysql:latest
+    container_name: challange_database
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --general-log=1 --innodb_autoinc_lock_mode=0
+    volumes:
+      - .:/docker-entrypoint-initdb.d
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: CHALLENGE
+      MYSQL_ROOT_PASSWORD: qwe123
+      MYSQL_USER: chg
+      MYSQL_PASSWORD: qwe123
+      MYSQL_HOST: mysql
+      LANG: C.UTF-8
+    networks:
+      - challenge
+    ports:
+      - 3306:3306
+
+  api_challenge:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    image: challenge/challenge_mateus
+    container_name: challenge_mateus
+    env_file:
+      - ./.env
+    environment:
+      TYPEORM_MIGRATIONS: /challenge_mateus/dist/database/migrations/*.js
+      TYPEORM_MIGRATIONS_DIR: /challenge_mateus/dist/database/migrations
+      TYPEORM_MIGRATIONS_TABLE_NAME: migrations
+    networks:
+      - challenge
+    ports:
+      - 3001:8080
+    volumes:
+      - ./:/challenge_mateus
+    stdin_open: true
+    tty: true
+    links:
+      - mysql
+    depends_on:
+      - mysql
+
+volumes:
+  esdata:
+  db_data:
